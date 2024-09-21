@@ -36,7 +36,7 @@ import com.google.gson.Gson
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val viewModel: ViewModel by viewModels()
+        val viewModel: JokeViewModel by viewModels{ JokeViewModelFactory((application as JokeApplication).jokeRepository) }
         setContent {
             Lab4Theme {
                 Surface(
@@ -51,11 +51,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun JokeScreen(viewModel: ViewModel) {
+fun JokeScreen(viewModel: JokeViewModel) {
     val coroutineScope = rememberCoroutineScope()
 
-    val latestJoke by viewModel.latestJoke.observeAsState("No jokes yet!")
-    val jokes by viewModel.jokes.observeAsState(emptyList())
+    val latestJoke by viewModel.currentJoke.observeAsState()
+    val jokes by viewModel.allJokes.observeAsState(emptyList())
 
     Column(
         modifier = Modifier
@@ -64,7 +64,7 @@ fun JokeScreen(viewModel: ViewModel) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = latestJoke,
+            text = latestJoke?.joke ?: "No joke available",
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
@@ -73,7 +73,8 @@ fun JokeScreen(viewModel: ViewModel) {
 
         Button(onClick = {
             coroutineScope.launch {
-                val joke = fetchJoke()
+                val jokeStr = fetchJoke()
+                val joke = Joke(jokeStr)
                 viewModel.addJoke(joke)
             }
         }) {
@@ -84,7 +85,7 @@ fun JokeScreen(viewModel: ViewModel) {
         ) {
             items(jokes) { joke ->
                 Text(
-                    text = joke,
+                    text = joke.joke,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp),
@@ -97,7 +98,7 @@ fun JokeScreen(viewModel: ViewModel) {
 
 suspend fun fetchJoke(): String {
     return withContext(Dispatchers.IO) {
-        val builder = Uri.Builder();
+        val builder = Uri.Builder()
         builder.scheme("https")
             .authority("api.chucknorris.io")
             .appendPath("jokes")
