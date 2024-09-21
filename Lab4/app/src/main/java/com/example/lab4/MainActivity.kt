@@ -32,6 +32,7 @@ import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import com.google.gson.Gson
+import java.util.Date
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,37 +60,58 @@ fun JokeScreen(viewModel: JokeViewModel) {
 
     Column(
         modifier = Modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    val jokeStr = fetchJoke()
+                    val jokeData = Joke(jokeStr)
+                    viewModel.addJoke(jokeData)
+                }
+            },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+        ) {
+            Text("Get a Joke")
+        }
+
+        Text(
+            text = "========== Newest Joke ==========",
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            textAlign = TextAlign.Center
+        )
+
         Text(
             text = latestJoke?.joke ?: "No joke available",
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
+            textAlign = TextAlign.Start
+        )
+
+        Text(
+            text = "========== Old Jokes ==========",
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
             textAlign = TextAlign.Center
         )
 
-        Button(onClick = {
-            coroutineScope.launch {
-                val jokeStr = fetchJoke()
-                val joke = Joke(jokeStr)
-                viewModel.addJoke(joke)
-            }
-        }) {
-            Text("Get a Joke")
-        }
         LazyColumn(
             modifier = Modifier.fillMaxWidth()
         ) {
-            items(jokes) { joke ->
+            items(jokes.reversed()) { jokeData ->
                 Text(
-                    text = joke.joke,
+                    text = jokeData.joke,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Start
                 )
             }
         }
