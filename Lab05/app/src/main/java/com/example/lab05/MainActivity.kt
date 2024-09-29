@@ -7,13 +7,16 @@ import android.hardware.SensorManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,7 +24,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalDensity
 import com.example.lab05.ui.theme.Lab05Theme
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -50,18 +56,37 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun drawScreen(gravFlow: Flow<FloatArray>?, modifier: Modifier = Modifier) {
-    Spacer(modifier = Modifier.height(50.dp))
-    Row(modifier = modifier) {
-        var textGrav by remember { mutableStateOf("") }
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val maxWidthPx = constraints.maxWidth.toFloat()
+        val maxHeightPx = constraints.maxHeight.toFloat()
+        val marbleSizeDp = 50.dp
+        val density = LocalDensity.current
+        val marbleSizePx = with(density) { marbleSizeDp.toPx() }
+        var offsetX by remember { mutableStateOf(0f) }
+        var offsetY by remember { mutableStateOf(0f) }
 
         gravFlow?.let {
             LaunchedEffect(key1 = it) {
                 it.collect { gravReading ->
-                    textGrav = "Grav reading: ${gravReading[0]} ${gravReading[1]} ${gravReading[2]}"
+                    offsetX += -gravReading[0] * 10
+                    offsetY += gravReading[1] * 10
+
+                    offsetX = offsetX.coerceIn(0f, maxWidthPx - marbleSizePx)
+                    offsetY = offsetY.coerceIn(0f, maxHeightPx - marbleSizePx)
                 }
             }
         }
-        Text(text = textGrav)
+
+        val offsetXDp: Dp = with(density) { offsetX.toDp() }
+        val offsetYDp: Dp = with(density) { offsetY.toDp() }
+
+        Box(
+            modifier = Modifier
+                .offset(x = offsetXDp, y = offsetYDp)
+                .background(color = Color.Blue, shape = CircleShape)
+                .height(marbleSizeDp)
+                .width(marbleSizeDp)
+        )
     }
 }
 
